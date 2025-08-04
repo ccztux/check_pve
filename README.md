@@ -192,7 +192,7 @@ Checks CPU usage in percentage. Value will be rounded. (/nodes/{node}/status)
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-cpu-usage -w 40 -c 60
-OK: CPU usage: 30% | Usage=1%;40;60
+OK: CPU usage: 30% | Usage=30%;40;60
 ```
 
 #### CPU load
