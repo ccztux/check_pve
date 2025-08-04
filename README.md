@@ -300,8 +300,7 @@ CRITICAL: Virtual Machine node/qemu/vmid is not running
 
 
 ### MISC
-This modes are not checks but helpers.
-
+Unlike regular checks, these modes are designed to assist by providing supporting functionality.
 
 #### List nodes
 Show all nodes.
