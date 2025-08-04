@@ -300,7 +300,12 @@ CRITICAL: Virtual Machine node/qemu/vmid is not running
 
 
 ### MISC
+This modes are not checks but helpers.
+
+
 #### List nodes
+Show all nodes.
+
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m list-nodes
 Node
@@ -310,6 +315,8 @@ pve2
 
 
 #### List vms
+Show all vms.
+
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m list-vms
 Node       Type     Id     Name
