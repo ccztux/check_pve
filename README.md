@@ -273,3 +273,40 @@ OK: Network usage in: 2.45MB | Usage=2.45MB;50;60
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m vm-net-out-usage -t qemu -i 126 -w 50 -c 60
 OK: Network usage out: 1.1MB | Usage=1.1MB;50;60
 ```
+
+
+#### Status
+Checks if a vm is running. (/nodes/{node}/{type}/{vmid}/status/current)
+
+```shell
+# running
+./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m vm-state -t qemu -i 126
+OK: Virtual Machine node/qemu/vmid is running
+# not running
+./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m vm-state -t qemu -i 126
+CRITICAL: Virtual Machine node/qemu/vmid is not running
+```
+
+
+
+### MISC
+#### List nodes
+```shell
+./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m list-nodes
+Node
+pve1
+pve2
+```
+
+
+#### List vms
+```shell
+./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m list-vms
+Node       Type     Id     Name
+pve1       qemu     128    vm11
+pve1       qemu     118    vm12
+pve1       qemu     108    vm13
+pve2       qemu     141    vm21
+pve2       qemu     143    vm22
+pve2       qemu     126    vm23
+```
