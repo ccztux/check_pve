@@ -174,7 +174,7 @@ Specify datastore/storage with `--name` option.
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-storage-usage --name local -w 40 -c 60
-WARNING: Storage usage: 45% | Usage=45%;40;60
+WARNING: Storage usage: 45% | 'storage_usage'=45%;40;60
 ```
 
 ##### Status
@@ -192,7 +192,7 @@ Checks CPU usage in percentage. Value will be rounded. (/nodes/{node}/status)
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-cpu-usage -w 40 -c 60
-OK: CPU usage: 30% | Usage=30%;40;60
+OK: CPU usage: 30% | 'cpu_usage'=30%;40;60
 ```
 
 #### CPU load
@@ -210,7 +210,7 @@ Checks memory usage in percentage. Value will be rounded. (/nodes/{node}/status)
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-memory-usage -w 90 -c 95
-OK: Memory usage: 85.03% | Usage=85.03%;90;95
+OK: Memory usage: 85.03% | 'memory_usage'=85.03%;90;95
 ```
 
 #### IO Wait
@@ -218,7 +218,7 @@ Checks IO wait/delay usage in percentage. Value will be rounded. (/nodes/{node}/
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-io-wait -w 1 -c 3
-OK: IO Wait: 0% | Wait=0%;1;3
+OK: IO Wait: 0% | 'io_wait'=0%;1;3
 ```
 
 #### Network usage
@@ -227,10 +227,10 @@ Checks network usage (In/Out). Value will be rounded. (/nodes/{node}/rrddata)
 ```shell
 # inbound
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-net-in-usage -w 100 -c 200
-OK: Network usage in: 2.54MB | Usage=2.54MB;100;200
+OK: Network usage in: 2.54MB | 'net_in_usage'=2.54MB;100;200
 # outbound
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-net-out-usage -w 100 -c 200
-OK: Network usage out: 1.12MB | Usage=1.12MB;100;200
+OK: Network usage out: 1.12MB | 'net_out_usage'=1.12MB;100;200
 ```
 
 #### KSM
@@ -238,7 +238,7 @@ Checks KSM usage. Value will be rounded. (/nodes/{node}/status)
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-ksm-usage --unit gb -w 20 -c 25
-OK: KSM sharing: 14.26GB | Usage=14.26GB;20;25
+OK: KSM sharing: 14.26GB | 'ksm_usage'=14.26GB;20;25
 ```
 
 ### VM
@@ -257,7 +257,7 @@ Check CPU usage in percentage. Value will be rounded. (/nodes/{node}/{type}/{vmi
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m vm-cpu-usage -t qemu -i 126 -w 80 -c 90
-OK: CPU usage: 5% | Usage=5%;80;90
+OK: CPU usage: 5% | 'cpu_usage'=5%;80;90
 ```
 
 #### Disk read, write
@@ -266,10 +266,10 @@ Checks how much read/write io was done. Value will be rounded. (/nodes/{node}/{t
 ```shell
 # read
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m vm-disk-read-usage -t qemu -i 126 -w 80 -c 90
-OK: Disk read: 2MB | Usage=2MB;80;90
+OK: Disk read: 2MB | 'disk_read_usage'=2MB;80;90
 # write
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m vm-disk-write-usage -t qemu -i 126 -w 80 -c 90
-OK: Disk write: 15.4MB | Usage=15.4MB;80;90
+OK: Disk write: 15.4MB | 'disk_write_usage'=15.4MB;80;90
 ```
 
 #### Network usage
@@ -278,10 +278,10 @@ Checks how much incoming/outgoing network traffic was done in kb. Value will be 
 ```shell
 # read
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m vm-net-in-usage -t qemu -i 126 -w 50 -c 60
-OK: Network usage in: 2.45MB | Usage=2.45MB;50;60
+OK: Network usage in: 2.45MB | 'net_in_usage'=2.45MB;50;60
 # write
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m vm-net-out-usage -t qemu -i 126 -w 50 -c 60
-OK: Network usage out: 1.1MB | Usage=1.1MB;50;60
+OK: Network usage out: 1.1MB | 'net_out_usage'=1.1MB;50;60
 ```
 
 
@@ -304,7 +304,7 @@ CRITICAL: Virtual Machine node/qemu/vmid is not running
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m list-nodes
 Node
-pve1
+pve
 pve2
 ```
 
@@ -313,9 +313,9 @@ pve2
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m list-vms
 Node       Type     Id     Name
-pve1       qemu     128    vm11
-pve1       qemu     118    vm12
-pve1       qemu     108    vm13
+pve        qemu     128    vm1
+pve        qemu     118    vm2
+pve        qemu     108    vm3
 pve2       qemu     141    vm21
 pve2       qemu     143    vm22
 pve2       qemu     126    vm23
