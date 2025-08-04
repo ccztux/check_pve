@@ -87,32 +87,6 @@ Options:
     -v, --version                    Print version information
     -h, --help                       Show this help message
 ```
-### Options
-* -s, -H: PVE host address, only https supported, e.g. _pve-01.example.com_
-
-* -k: Don't validate certificate
-
-* -m: check to be used (node-cluster-status,..)
-
-* -n: PVE Node name
-
-* -u: Username with auth realm, e.g. _monitoring@pve_, _root@pam_
-
-* -i: ID of qemu/lxc machine
-
-* -x: Exclude items (regex)
-
-* --name: Storage name, e.g. _local_, _local-lvm_, also used as user filter for tasks
-
-* --type: either lxc or qemu, also used as type filter for tasks
-
-* --timeframe: time frame for rrd data; _hour, day, week, month_ or _year_. Default 'hour'
-
-* --cf: consolidation function for rrd data; _average_ or _max_. Default 'max'
-
-* --lookback: time in seconds to look back
-
-* --unit: specify desired unit output: kb, mb, gb, tb. Default 'mb'
 
 ## Modes
 ### Cluster
