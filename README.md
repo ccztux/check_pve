@@ -187,12 +187,22 @@ Allows exclude option.
 WARNING: local-lvm not active
 ```
 
-#### CPU
+#### CPU usage
 Checks CPU usage in percentage. Value will be rounded. (/nodes/{node}/status)
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-cpu-usage -w 40 -c 60
 OK: CPU usage: 30% | Usage=1%;40;60
+```
+
+#### CPU load
+```shell
+# without dividing load per cpu
+./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-cpu-load
+CRITICAL: load15: 1.84 | 'load1'=2.12;2.0;3.0;; 'load5'=1.98;1.5;2.0;; 'load15'=1.84;0.9;1.0;;
+# divide load per cpu
+./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-cpu-load -r
+OK: load1: 0.01, load5: 0.02, load15: 0.01 | 'load1'=0.01;2.0;3.0;; 'load5'=0.02;1.5;2.0;; 'load15'=0.01;0.9;1.0;;
 ```
 
 #### Memory
