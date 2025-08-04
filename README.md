@@ -120,7 +120,7 @@ Checks if the cluster is quorate. Warning if not. (/cluster/status)
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -m cluster-status
-OK - LNZ: Cluster ready - quorum is ok
+OK: LNZ: Cluster ready - quorum is ok
 ```
 
 ### Node
@@ -133,7 +133,7 @@ Allows exclude option: `--exclude '^/dev/sda'`
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-smart-status
-OK - No SMART errors detected
+OK: No SMART errors detected
 ```
 
 #### Updates
@@ -141,7 +141,7 @@ Displays a warning if new updates are available. (/nodes/{node}/apt/update)
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-updates-available
-Warning - 12 updates available
+WARNING: 12 updates available
 ```
 
 #### Subscription
@@ -152,7 +152,7 @@ Critical status if the subscription has expired.
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-subscription-valid -w 60                                                 
-Warning - Subscription will end at 2018-10-13
+WARNING: Subscription will end at 2018-10-13
 ```
 
 #### Services
@@ -162,13 +162,13 @@ Allows exclude option: `--exclude 'ksmtuned'`
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-services-status
-Warning - postfix, spiceproxy not running
+WARNING: postfix, spiceproxy not running
 ```
 To exclude services:
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-services-status -x 'postfix|spiceproxy'
-OK - All services running
+OK: All services running
 ```
 
 #### Tasks
@@ -183,11 +183,11 @@ Exclude option `--exclude` can specified for the status message.
 ```shell
 # only show errors from shutdown tasks the last hour
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-task-errors --lookback 3600 -t qmshutdown
-Warning - 2022-07-24 14:20:08 +0200: qmshutdown/root@pam - received interrupt
+WARNING: 2022-07-24 14:20:08 +0200: qmshutdown/root@pam - received interrupt
 
 # but exclude tasks with 'interrupt' in the status message
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-task-errors --lookback 3600 -t qmshutdown -x 'interrupt'
-OK - No failed tasks
+OK: No failed tasks
 ```
 
 #### Storage
@@ -200,7 +200,7 @@ Specify datastore/storage with `--name` option.
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-storage-usage --name local -w 40 -c 60
-Warning - Storage usage: 45% | Usage=45%;40;60
+WARNING: Storage usage: 45% | Usage=45%;40;60
 ```
 
 ##### Status
@@ -210,7 +210,7 @@ Allows exclude option.
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-storage-status
-Warning - local-lvm not active
+WARNING: local-lvm not active
 ```
 
 #### CPU
@@ -218,7 +218,7 @@ Checks CPU usage in percentage. Value will be rounded. (/nodes/{node}/status)
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-cpu-usage -w 40 -c 60
-OK - CPU usage: 30% | Usage=1%;40;60
+OK: CPU usage: 30% | Usage=1%;40;60
 ```
 
 #### Memory
@@ -226,7 +226,7 @@ Checks memory usage in percentage. Value will be rounded. (/nodes/{node}/status)
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-memory-usage -w 90 -c 95
-OK - Memory usage: 85.03% | Usage=85.03%;90;95
+OK: Memory usage: 85.03% | Usage=85.03%;90;95
 ```
 
 #### IO Wait
@@ -234,7 +234,7 @@ Checks IO wait/delay usage in percentage. Value will be rounded. (/nodes/{node}/
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-io-wait -w 1 -c 3
-OK - IO Wait: 0% | Wait=0%;1;3
+OK: IO Wait: 0% | Wait=0%;1;3
 ```
 
 #### Network usage
@@ -243,10 +243,10 @@ Checks network usage (In/Out). Value will be rounded. (/nodes/{node}/rrddata)
 ```shell
 # inbound
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-net-in-usage -w 100 -c 200
-OK - Network usage in: 2.54MB | Usage=2.54MB;100;200
+OK: Network usage in: 2.54MB | Usage=2.54MB;100;200
 # outbound
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-net-out-usage -w 100 -c 200
-OK - Network usage out: 1.12MB | Usage=1.12MB;100;200
+OK: Network usage out: 1.12MB | Usage=1.12MB;100;200
 ```
 
 #### KSM
@@ -254,7 +254,7 @@ Checks KSM usage. Value will be rounded. (/nodes/{node}/status)
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m node-ksm-usage --unit gb -w 20 -c 25
-OK - KSM sharing: 14.26GB | Usage=14.26GB;20;25
+OK: KSM sharing: 14.26GB | Usage=14.26GB;20;25
 ```
 
 ### VM
@@ -273,7 +273,7 @@ Check CPU usage in percentage. Value will be rounded. (/nodes/{node}/{type}/{vmi
 
 ```shell
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m vm-cpu-usage -t qemu -i 126 -w 80 -c 90
-OK - CPU usage: 5% | Usage=5%;80;90
+OK: CPU usage: 5% | Usage=5%;80;90
 ```
 
 #### Disk read, write
@@ -282,10 +282,10 @@ Checks how much read/write io was done. Value will be rounded. (/nodes/{node}/{t
 ```shell
 # read
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m vm-disk-read-usage -t qemu -i 126 -w 80 -c 90
-OK - Disk read: 2MB | Usage=2MB;80;90
+OK: Disk read: 2MB | Usage=2MB;80;90
 # write
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m vm-disk-write-usage -t qemu -i 126 -w 80 -c 90
-OK - Disk write: 15.4MB | Usage=15.4MB;80;90
+OK: Disk write: 15.4MB | Usage=15.4MB;80;90
 ```
 
 #### Network usage
@@ -294,8 +294,8 @@ Checks how much incoming/outgoing network traffic was done in kb. Value will be 
 ```shell
 # read
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m vm-net-in-usage -t qemu -i 126 -w 50 -c 60
-OK - Network usage in: 2.45MB | Usage=2.45MB;50;60
+OK: Network usage in: 2.45MB | Usage=2.45MB;50;60
 # write
 ./check_pve.rb -s pve.example.com -u monitoring@pve -p test1234 -n pve -m vm-net-out-usage -t qemu -i 126 -w 50 -c 60
-OK - Network usage out: 1.1MB | Usage=1.1MB;50;60
+OK: Network usage out: 1.1MB | Usage=1.1MB;50;60
 ```
