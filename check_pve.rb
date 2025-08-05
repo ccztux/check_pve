@@ -70,7 +70,10 @@ banner = <<HEREDOC
       node-net-out-usage         Checks outbound network usage in kilobytes
       node-ksm-usage             Checks KSM sharing usage in megabytes
     VM:
-      vm-status                  Checks the status of a vm (running = OK)
+      vm-status                  Checks the status of a vm (running = OK
+                                                            stopped = CRITICAL
+                                                            paused  = WARNING
+                                                            other   = CRITICAL)
       vm-cpu-usage               Checks CPU usage in percentage
       vm-memory-usage            Checks memory usage
       vm-disk-read-usage         Checks how many kb last 60s was read (timeframe: hour)
