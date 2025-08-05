@@ -29,11 +29,27 @@ require 'json'
 require 'date'
 require 'time'
 
-version = 'v0.5.5'
+# Constants
+NAGIOS_EXIT_CODES = {
+  ok: 0,
+  warning: 1,
+  critical: 2,
+  unknown: 3
+}.freeze
+
+BYTE_UNITS = {
+  'kb' => 1024,
+  'mb' => 1024**2,
+  'gb' => 1024**3,
+  'tb' => 1024**4,
+  'pb' => 1024**5
+}.freeze
+
+VERSION = 'v0.5.6'
 
 # optparser
 banner = <<HEREDOC
-  check_pve #{version} [https://gitlab.com/6uellerBpanda/check_pve]\n
+  check_pve #{VERSION} [https://gitlab.com/6uellerBpanda/check_pve]\n
   This plugin checks various parameters of Proxmox Virtual Environment via API(v2)\n
   Mode:
     Cluster:
@@ -128,7 +144,7 @@ OptionParser.new do |opts| # rubocop:disable  Metrics/BlockLength
     options[:debug] = d
   end
   opts.on('-v', '--version', 'Print version information') do
-    puts "check_pve #{version}"
+    puts "check_pve #{VERSION}"
   end
   opts.on('-h', '--help', 'Show this help message') do
     puts opts
@@ -176,11 +192,28 @@ misc_modes = %w[
 
 all_modes = cluster_modes + node_modes + vm_modes + misc_modes
 
+if options[:address].nil? || options[:address].empty?
+  warn ""
+  warn "ERROR: Option --address is required"
+  exit 20
+end
 
-if options[:mode].nil?
+if options[:username].nil? || options[:username].empty?
+  warn ""
+  warn "ERROR: Option --username is required"
+  exit 21
+end
+
+if options[:password].nil? || options[:password].empty?
+  warn ""
+  warn "ERROR: Option --password is required"
+  exit 22
+end
+
+if options[:mode].nil? || options[:mode].empty?
   warn ""
   warn 'ERROR: Option --mode is required'
-  exit 255
+  exit 23
 elsif !all_modes.include?(options[:mode])
   warn ""
   warn "ERROR: Invalid --mode: '#{options[:mode]}'"
@@ -190,13 +223,13 @@ elsif !all_modes.include?(options[:mode])
   warn "  Node:    #{node_modes.join(', ')}"
   warn "  VM:      #{vm_modes.join(', ')}"
   warn "  Misc:    #{misc_modes.join(', ')}"
-  exit 255
+  exit 24
 end
 
 if vm_modes.include?(options[:mode]) && options[:vmid].nil?
   warn ""
   warn "ERROR: Option --vmid is required for mode '#{options[:mode]}'"
-  exit 255
+  exit 25
 end
 
 
@@ -258,22 +291,22 @@ class CheckPve
   # define some helper methods for naemon with appropriate exit codes
   def ok_msg(message)
     puts "OK: #{message}"
-    exit 0
+    exit NAGIOS_EXIT_CODES[:ok]
   end
 
   def crit_msg(message)
     puts "CRITICAL: #{message}"
-    exit 2
+    exit NAGIOS_EXIT_CODES[:critical]
   end
 
   def warn_msg(message)
     puts "WARNING: #{message}"
-    exit 1
+    exit NAGIOS_EXIT_CODES[:warning]
   end
 
   def unk_msg(message)
     puts "UNKNOWN: #{message}"
-    exit 3
+    exit NAGIOS_EXIT_CODES[:unknown]
   end
 
   def convert_value(args = {})
@@ -281,21 +314,20 @@ class CheckPve
     value1 = args[:value1]
     value2 = args[:value2]
 
-    if value1.nil?
-      unk_msg("value1 is nil in function #{__method__}")
-    end
-
-    if value2.nil? && type == '%'
-      unk_msg("value2 is nil in function #{__method__}")
-    end
+    unk_msg("value1 is nil in function #{__method__}") if value1.nil?
+    unk_msg("value2 is nil in function #{__method__}") if value2.nil? && type == '%'
 
     @usage = case type
-             when '%' then value2.to_s.empty? ? format('%.2f', value1 * 100).to_f.round(2) : ((value1.to_f * 100) / value2).to_f.round(2)
-             when 'kb' then (value1.to_f / 1024).round(2)
-             when 'mb' then (value1.to_f / 1024 / 1024).round(2)
-             when 'gb' then (value1.to_f / 1024 / 1024 / 1024).round(2)
-             when 'tb' then (value1.to_f / 1024 / 1024 / 1024 / 1024).round(2)
-             when 'pb' then (value1.to_f / 1024 / 1024 / 1024 / 1024 / 1024).round(2)
+             when '%'
+               if value2.to_s.empty?
+                 (value1 * 100).to_f.round(2)
+               else
+                 ((value1.to_f * 100) / value2).to_f.round(2)
+               end
+             when *BYTE_UNITS.keys
+               (value1.to_f / BYTE_UNITS[type]).round(2)
+             else
+               unk_msg("Unknown unit type: #{type}in function #{__method__}")
              end
   end
 
@@ -421,10 +453,15 @@ class CheckPve
   def url(args = {})
     path = args[:path]
     req  = args.fetch(:req, 'get')
+
+    validate_connection_parameters!
+
     uri = URI("https://#{@options[:address]}:8006/#{path}")
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE if @options[:insecure]
+    http.read_timeout = 30  # Add timeout
+
     if req == 'post'
       request = Net::HTTP::Post.new(uri.request_uri)
       request.set_form_data('username' => @options[:username].to_s, 'password' => @options[:password].to_s)
@@ -434,8 +471,23 @@ class CheckPve
       request['cookie'] = @token
     end
     @response = http.request(request)
-  rescue StandardError => e
-    unk_msg(e)
+    rescue Timeout::Error => e
+      unk_msg("Connection timeout: #{e.message}")
+    rescue Errno::ECONNREFUSED => e
+      unk_msg("Connection refused - check if PVE API is running: #{e.message}")
+    rescue Errno::EHOSTUNREACH => e
+      unk_msg("Host unreachable: #{e.message}")
+    rescue OpenSSL::SSL::SSLError => e
+      unk_msg("SSL connection error: #{e.message}")
+    rescue StandardError => e
+      unk_msg("Connection error: #{e.message}")
+    end
+
+  # Validate required connection parameters
+  def validate_connection_parameters!
+    unk_msg("Host address is required") if @options[:address].nil? || @options[:address].empty?
+    unk_msg("Username is required") if @options[:username].nil? || @options[:username].empty?
+    unk_msg("Password is required") if @options[:password].nil? || @options[:password].empty?
   end
 
   # check http response
@@ -450,7 +502,15 @@ class CheckPve
     url(path: path, req: req)
     puts "URL: #{path}" if @options[:debug]
     check_http_response
-    @json_body = JSON.parse(@response.body)['data']
+
+    begin
+      parsed_response = JSON.parse(@response.body)
+      @json_body = parsed_response['data']
+      unk_msg("No data in API response") if @json_body.nil?
+    rescue JSON::ParserError => e
+      unk_msg("Invalid JSON response: #{e.message}")
+    end
+
     puts JSON.pretty_generate(@json_body) if @options[:debug]
   end
 
@@ -480,7 +540,7 @@ class CheckPve
   def node_smart_status
     return unless @options[:mode] == 'node-smart-status'
     http_connect(path: "api2/json/nodes/#{@options[:node]}/disks/list")
-    unhealthy = @json_body.reject { |item| item['health'] == 'PASSED' || 'OK' }
+    unhealthy = @json_body.reject { |item| item['health'] == 'PASSED' || item['health'] == 'OK' }
     exclude(data: unhealthy, value: 'devpath')
     build_output(
       warn_text: unhealthy.map { |item| "#{item['model']}:#{item['used']}-#{item['devpath']} SMART error detected" }.join(', '),
@@ -690,10 +750,15 @@ class CheckPve
     http_connect(path: "api2/json/nodes/#{@options[:node]}/#{@options[:type]}/#{@options[:vmid]}/status/current")
     current_vm_status = @json_body['status']
 
-    if current_vm_status == 'running'
-        ok_msg("Virtual Machine #{@options[:node]}/#{@options[:type]}/#{@options[:vmid]} is running")
+    case current_vm_status
+    when 'running'
+      ok_msg("Virtual Machine #{@options[:node]}/#{@options[:type]}/#{@options[:vmid]} is running")
+    when 'stopped'
+      crit_msg("Virtual Machine #{@options[:node]}/#{@options[:type]}/#{@options[:vmid]} is stopped")
+    when 'paused'
+      warn_msg("Virtual Machine #{@options[:node]}/#{@options[:type]}/#{@options[:vmid]} is paused")
     else
-        crit_msg("Virtual Machine #{@options[:node]}/#{@options[:type]}/#{@options[:vmid]} is not running")
+      crit_msg("Virtual Machine #{@options[:node]}/#{@options[:type]}/#{@options[:vmid]} is in unknown state: #{current_vm_status}")
     end
   end
 

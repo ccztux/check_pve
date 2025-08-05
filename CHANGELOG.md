@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.5.6] - 2025-08-??
+## [v0.5.6] - 2025-08-??
 
 ### Added
 - **Constants**: Added `NAGIOS_EXIT_CODES` and `BYTE_UNITS` constants for better code maintainability
@@ -54,7 +54,7 @@ For users upgrading from previous versions, no configuration changes are require
 
 
 
-## [0.5.5]
+## [v0.5.5]
 ### other
 * Rewritten to support older Ruby version (Ruby >= 2.0)
 
@@ -66,7 +66,7 @@ For users upgrading from previous versions, no configuration changes are require
 * Added default thresholds
 * Added rudimentary option checks
 
-## [0.3.0]
+## [v0.3.0]
 * __NOTE__ - I've renamed all checks to a more consistent syntax to distinguish them better.
 
 ### added
@@ -81,12 +81,12 @@ For users upgrading from previous versions, no configuration changes are require
 * --timeframe and --cf are now optional. Defaults to `--timeframe hour` and `--cf max`.
 
 
-## [0.2.5]
+## [v0.2.5]
 ### fixes
 * subscription: show message from json output when status is not "Active"
 
 
-## [0.2.4]
+## [v0.2.4]
 ### features
 * new modes: ksm, net_in, net_out
 
@@ -95,27 +95,27 @@ For users upgrading from previous versions, no configuration changes are require
 * exclude option now uses regex
 
 
-## [0.2.3]
+## [v0.2.3]
 ### other
 * add '-H' option for host address (!4)
 * rubocop - rescue exception var name
 
 
-## [0.2.2]
+## [v0.2.2]
 ### features
 * add an exclude option for _services_ check
 
 
-## [0.2.1]
+## [v0.2.1]
 ### fixes
 * fix wrong var name (#1)
 
 
-## [0.2]
+## [v0.2]
 ### features
 * new vm/lxc check modes
 
 
-## [0.1.1]
+## [v0.1.1]
 ### fixes
 * smart ok output changed to 'PASSED' (!1)
