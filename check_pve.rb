@@ -29,15 +29,15 @@ require 'json'
 require 'date'
 require 'time'
 
-version = 'v0.5.5'
+version = 'v0.3.0'
 
 # optparser
-banner = <<HEREDOC
+banner = <<~HEREDOC
   check_pve #{version} [https://gitlab.com/6uellerBpanda/check_pve]\n
   This plugin checks various parameters of Proxmox Virtual Environment via API(v2)\n
   Mode:
     Cluster:
-      cluster-status             Checks quorum of cluster
+      cluster-status            Checks quorum of cluster
     Node:
       node-smart-status          Checks SMART health of disks
       node-updates-available     Checks for available updates
@@ -47,23 +47,18 @@ banner = <<HEREDOC
       node-storage-usage         Checks storage usage in percentage
       node-storage-status        Checks if storage is online/offline
       node-cpu-usage             Checks CPU usage in percentage
-      node-cpu-load              Checks CPU load average
       node-memory-usage          Checks Memory usage in gigabytes
       node-io-wait               Checks IO wait in percentage
       node-net-in-usage          Checks inbound network usage in kilobytes
       node-net-out-usage         Checks outbound network usage in kilobytes
       node-ksm-usage             Checks KSM sharing usage in megabytes
     VM:
-      vm-status                  Checks the status of a vm (running = OK)
       vm-cpu-usage               Checks CPU usage in percentage
       vm-memory-usage            Checks memory usage
       vm-disk-read-usage         Checks how many kb last 60s was read (timeframe: hour)
       vm-disk-write-usage        Checks how many kb last 60s was written (timeframe: hour)
       vm-net-in-usage            Checks incoming kb from last 60s (timeframe: hour)
       vm-net-out-usage           Checks outgoing kb from last 60s (timeframe: hour)
-    Misc:
-      list-nodes                 Lists all PVE nodes
-      list-vms                   Lists all VMs across all nodes
 
   Usage: #{File.basename(__FILE__)} [mode] [options]
 HEREDOC
@@ -97,7 +92,7 @@ OptionParser.new do |opts| # rubocop:disable  Metrics/BlockLength
   opts.on('-c', '--critical CRITICAL', 'Critical threshold') do |c|
     options[:critical] = c
   end
-  opts.on('--unit UNIT', %i[kb mb gb tb pb], String, 'Unit - kb, mb, gb, tb, pb') do |unit|
+  opts.on('--unit UNIT', %i[kb mb gb tb], String, 'Unit - kb, mb, gb, tb') do |unit|
     options[:unit] = unit
   end
   opts.on('--name NAME', 'Name for storage or user filter for tasks') do |name|
@@ -112,107 +107,35 @@ OptionParser.new do |opts| # rubocop:disable  Metrics/BlockLength
   opts.on('-x', '--exclude EXCLUDE', 'Exclude (regex)') do |x|
     options[:exclude] = x
   end
-  opts.on('-r', '--percpu', 'Divide the load averages by the number of CPUs (when possible)') do |percpu|
-    options[:percpu] = percpu
-  end
-  opts.on('--timeframe TIMEFRAME', 'Timeframe for vm checks: hour,day,week,month or year. Default: hour') do |timeframe|
+  opts.on('--timeframe TIMEFRAME', 'Timeframe for vm checks: hour,day,week,month or year. Default hour') do |timeframe|
     options[:timeframe] = timeframe
   end
-  opts.on('--cf CONSOLIDATION_FUNCTION', 'RRD cf: average or max. Default: max') do |cf|
+  opts.on('--cf CONSOLIDATION_FUNCTION', 'RRD cf: average or max. Default max') do |cf|
     options[:cf] = cf
   end
   opts.on('--lookback LOOKBACK', Integer, 'Lookback in seconds') do |lookback|
     options[:lookback] = lookback
-  end
-  opts.on('-d', '--debug', 'Enable debug') do |d|
-    options[:debug] = d
   end
   opts.on('-v', '--version', 'Print version information') do
     puts "check_pve #{version}"
   end
   opts.on('-h', '--help', 'Show this help message') do
     puts opts
-    exit 0
   end
   ARGV.push('-h') if ARGV.empty?
 end.parse!
-
-
-cluster_modes = %w[
-  cluster-status
-]
-
-node_modes = %w[
-  node-smart-status
-  node-updates-available
-  node-subscription-valid
-  node-services-status
-  node-task-errors
-  node-storage-usage
-  node-storage-status
-  node-cpu-usage
-  node-cpu-load
-  node-memory-usage
-  node-io-wait
-  node-net-in-usage
-  node-net-out-usage
-  node-ksm-usage
-]
-
-vm_modes = %w[
-  vm-status
-  vm-cpu-usage
-  vm-memory-usage
-  vm-disk-read-usage
-  vm-disk-write-usage
-  vm-net-in-usage
-  vm-net-out-usage
-]
-
-misc_modes = %w[
-  list-nodes
-  list-vms
-]
-
-all_modes = cluster_modes + node_modes + vm_modes + misc_modes
-
-
-if options[:mode].nil?
-  warn ""
-  warn 'ERROR: Option --mode is required'
-  exit 255
-elsif !all_modes.include?(options[:mode])
-  warn ""
-  warn "ERROR: Invalid --mode: '#{options[:mode]}'"
-  warn ""
-  warn "Valid values are:"
-  warn "  Cluster: #{cluster_modes.join(', ')}"
-  warn "  Node:    #{node_modes.join(', ')}"
-  warn "  VM:      #{vm_modes.join(', ')}"
-  warn "  Misc:    #{misc_modes.join(', ')}"
-  exit 255
-end
-
-if vm_modes.include?(options[:mode]) && options[:vmid].nil?
-  warn ""
-  warn "ERROR: Option --vmid is required for mode '#{options[:mode]}'"
-  exit 255
-end
-
 
 # check pve
 class CheckPve
   def initialize(options) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
     @options = options
     init_arr
-    set_default_thresholds
     cluster_status
     node_smart_status
     node_updates_available
     node_services_status
     node_subscription_valid
     node_cpu_usage
-    node_cpu_load
     node_memory_usage
     node_ksm_usage
     node_io_wait
@@ -223,13 +146,10 @@ class CheckPve
     node_net_out_usage
     vm_disk_write_usage
     vm_disk_read_usage
-    vm_status
     vm_cpu_usage
     vm_memory_usage
     vm_net_in_usage
     vm_net_out_usage
-    list_nodes
-    list_vms
   end
 
   def init_arr
@@ -244,134 +164,58 @@ class CheckPve
   # HELPER #
   #--------#
 
-  # set default thresholds if no values are suppulied via args
-  def set_default_thresholds()
-    if @options[:mode] == 'node-cpu-load'
-      @options[:warning]  ||= '2,1.5,0.9'
-      @options[:critical] ||= '3,2,1'
-    else
-      @options[:warning]  ||= 80
-      @options[:critical] ||= 90
-    end
-  end
-
   # define some helper methods for naemon with appropriate exit codes
   def ok_msg(message)
-    puts "OK: #{message}"
+    puts "OK - #{message}"
     exit 0
   end
 
   def crit_msg(message)
-    puts "CRITICAL: #{message}"
+    puts "Critical - #{message}"
     exit 2
   end
 
   def warn_msg(message)
-    puts "WARNING: #{message}"
+    puts "Warning - #{message}"
     exit 1
   end
 
   def unk_msg(message)
-    puts "UNKNOWN: #{message}"
+    puts "Unknown - #{message}"
     exit 3
   end
 
-  def convert_value(args = {})
-    type = args[:type]
-    value1 = args[:value1]
-    value2 = args[:value2]
-
-    if value1.nil?
-      unk_msg("value1 is nil in function #{__method__}")
-    end
-
-    if value2.nil? && type == '%'
-      unk_msg("value2 is nil in function #{__method__}")
-    end
-
+  def convert_value(type:, value1:, value2:) # rubocop:disable Metrics/AbcSize
     @usage = case type
              when '%' then value2.to_s.empty? ? format('%.2f', value1 * 100).to_f.round(2) : ((value1.to_f * 100) / value2).to_f.round(2)
              when 'kb' then (value1.to_f / 1024).round(2)
              when 'mb' then (value1.to_f / 1024 / 1024).round(2)
              when 'gb' then (value1.to_f / 1024 / 1024 / 1024).round(2)
              when 'tb' then (value1.to_f / 1024 / 1024 / 1024 / 1024).round(2)
-             when 'pb' then (value1.to_f / 1024 / 1024 / 1024 / 1024 / 1024).round(2)
              end
   end
 
   # check only one value
-  def check_single_data(args = {})
-    data = args[:data]
-    message = args[:message]
+  def check_single_data(data:, message:)
     crit_msg(message) if data
   end
 
-  # check multiple values
-  def check_multiple_data(args = {})
-    multi      = args[:multi] || false
-    data       = args[:data]
-    labels     = args[:labels] || []
-    unit       = args[:unit] || ''
-
-    if multi
-      return unk_msg("No data to check") unless data.is_a?(Array) && data.any?
-
-      warnings = @options[:warning].split(',').map(&:to_f)
-      criticals = @options[:critical].split(',').map(&:to_f)
-
-      data.each_with_index do |val, idx|
-        label = labels[idx] || "value#{idx + 1}"
-        warn  = warnings[idx] rescue nil
-        crit  = criticals[idx] rescue nil
-
-        val = val.to_f
-        message = "#{label}: #{val.round(2)}#{unit}"
-
-        if crit && val >= crit
-          @critical << message
-        elsif warn && val >= warn
-          @warning << message
-        else
-          @okays << message
-        end
-
-        warn_str = warn ? warn : ''
-        crit_str = crit ? crit : ''
-        build_perfdata(perfdata: "'#{label}'=#{val.round(2)}#{unit}", warning: warn_str, critical: crit_str)
-      end
-
-      build_final_output
+  def check_multiple_data(data:)
+    if data
+      warn_msg(@status_msg[:warn])
     else
-      if data
-        warn_msg(@status_msg[:warn])
-      else
-        ok_msg(@status_msg[:ok])
-      end
+      ok_msg(@status_msg[:ok])
     end
   end
 
-
   # helper for excluding
-  def exclude(args = {})
-    data = args[:data]
-    value = args[:value]
+  def exclude(data:, value:)
     data.delete_if { |item| /#{@options[:exclude]}/.match(item[value]) } unless @options[:exclude].to_s.empty?
   end
 
-  # check for missing data
-  def assert_required_keys!(hash, required_keys, context: 'data block')
-    missing = required_keys.reject { |key| hash.key?(key) }
-    unless missing.empty?
-      unk_msg("Incomplete #{context} (Missing keys: #{missing.join(', ')})")
-    end
-  end
-
   # generate perfdata
-  def build_perfdata(args = {})
-    perfdata = args[:perfdata]
-    warn     = args[:warning] || @options[:warning]
-    crit     = args[:critical] || @options[:critical]
-    @perfdata << "#{perfdata};#{warn};#{crit};;"
+  def build_perfdata(perfdata:)
+    @perfdata << "#{perfdata};#{@options[:warning]};#{@options[:critical]}"
   end
 
   # build service output
@@ -388,9 +232,7 @@ class CheckPve
   end
 
   # helper for threshold checking
-  def check_thresholds(args = {})
-    data = args[:data]
-
+  def check_thresholds(data:)
     if data > @options[:critical].to_i
       @critical << @message
     elsif data > @options[:warning].to_i
@@ -418,9 +260,7 @@ class CheckPve
   # API AUTH #
   #----------#
 
-  def url(args = {})
-    path = args[:path]
-    req  = args.fetch(:req, 'get')
+  def url(path:, req: 'get') # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
     uri = URI("https://#{@options[:address]}:8006/#{path}")
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
@@ -444,14 +284,10 @@ class CheckPve
   end
 
   # init http req
-  def http_connect(args = {})
-    path = args[:path]
-    req  = args.fetch(:req, 'get')
+  def http_connect(path:, req: 'get')
     url(path: path, req: req)
-    puts "URL: #{path}" if @options[:debug]
     check_http_response
     @json_body = JSON.parse(@response.body)['data']
-    puts JSON.pretty_generate(@json_body) if @options[:debug]
   end
 
   # get cookie
@@ -522,7 +358,7 @@ class CheckPve
     return unless @options[:mode] == 'node-subscription-valid'
     http_connect(path: "api2/json/nodes/#{@options[:node]}/subscription")
     due_date = @json_body['nextduedate']
-    check_single_data(data: @json_body['status'] != 'active', message: @json_body['message'])
+    check_single_data(data: @json_body['status'] != 'Active', message: @json_body['message'])
     build_output(
       warn_text: "Subscription will end at #{due_date}",
       ok_text: "Subscription is valid till #{due_date}"
@@ -550,15 +386,10 @@ class CheckPve
   end
 
   # helper for vm node checks
-  def node_vm_helper(args = {})
-    output_msg        = args[:output_msg]
-    value             = args[:value]
-    perf_label        = args.fetch(:perf_label, 'usage').downcase
-    convert_value_to  = args.fetch(:convert_value_to, @options[:unit])
-    value_to_compare  = args.fetch(:value_to_compare, '')
+  def node_vm_helper(output_msg:, value:, perf_label: 'Usage', convert_value_to: @options[:unit], value_to_compare: '')
     convert_value(type: convert_value_to, value1: value, value2: value_to_compare)
     @message = "#{output_msg}: #{@usage}#{convert_value_to.upcase}"
-    build_perfdata(perfdata: "'#{perf_label}'=#{@usage}#{convert_value_to.upcase}")
+    build_perfdata(perfdata: "#{perf_label}=#{@usage}#{convert_value_to.upcase}")
     check_thresholds(data: @usage)
   end
 
@@ -571,51 +402,28 @@ class CheckPve
   def node_cpu_usage
     return unless @options[:mode] == 'node-cpu-usage'
     fetch_status_data
-    node_vm_helper(value: @json_body['cpu'], output_msg: 'CPU usage', perf_label: 'cpu_usage', convert_value_to: '%')
-  end
-
-  ### node: cpu load
-  def node_cpu_load
-    return unless @options[:mode] == 'node-cpu-load'
-    fetch_status_data
-
-    loadavg = @json_body['loadavg']
-    return unk_msg('Loadavg data not found') unless loadavg && loadavg.size == 3
-
-    if @options[:percpu]
-      number_of_cpus = @json_body['cpuinfo'] && @json_body['cpuinfo']['cpus']
-      return unk_msg('CPU info not found') unless number_of_cpus && number_of_cpus > 0
-
-      loadavg = loadavg.map { |v| v.to_f / number_of_cpus.to_f }
-    end
-
-    check_multiple_data(
-      multi: true,
-      data: loadavg,
-      labels: ['load1', 'load5', 'load15'],
-      unit: ''
-    )
+    node_vm_helper(value: @json_body['cpu'], output_msg: 'CPU usage', convert_value_to: '%')
   end
 
   ### node: io wait
   def node_io_wait
     return unless @options[:mode] == 'node-io-wait'
     fetch_status_data
-    node_vm_helper(value: @json_body['wait'], output_msg: 'IO Wait', perf_label: 'io_wait')
+    node_vm_helper(value: @json_body['wait'], output_msg: 'IO Wait', perf_label: 'Wait')
   end
 
   ### node: memory
   def node_memory_usage
     return unless @options[:mode] == 'node-memory-usage'
     fetch_status_data
-    node_vm_helper(value: @json_body['memory']['used'], output_msg: 'Memory usage', perf_label: 'memory_usage', value_to_compare: @json_body['memory']['total'], convert_value_to: '%')
+    node_vm_helper(value: @json_body['memory']['used'], output_msg: 'Memory usage', value_to_compare: @json_body['memory']['total'], convert_value_to: '%')
   end
 
   ### node: ksm
   def node_ksm_usage
     return unless @options[:mode] == 'node-ksm-usage'
     fetch_status_data
-    node_vm_helper(value: @json_body['ksm']['shared'], output_msg: 'KSM sharing', perf_label: 'ksm_usage')
+    node_vm_helper(value: @json_body['ksm']['shared'], output_msg: 'KSM sharing')
   end
 
   ### node: storage usage
@@ -626,7 +434,6 @@ class CheckPve
       value: @json_body['used'],
       value_to_compare: @json_body['total'],
       output_msg: 'Storage usage',
-      perf_label: 'storage_usage',
       convert_value_to: '%'
     )
   end
@@ -652,18 +459,14 @@ class CheckPve
   def node_net_in_usage
     return unless @options[:mode] == 'node-net-in-usage'
     fetch_status_data(type: 'rrd')
-    required_keys = %w[netin]
-    assert_required_keys!(@json_body[-1], required_keys, context: 'Node RRD data')
-    node_vm_helper(value: @json_body[-1]['netin'], output_msg: 'Network usage in', perf_label: 'net_in_usage')
+    node_vm_helper(value: @json_body[-1]['netin'], output_msg: 'Network usage in')
   end
 
   ### node: netout
   def node_net_out_usage
     return unless @options[:mode] == 'node-net-out-usage'
     fetch_status_data(type: 'rrd')
-    required_keys = %w[netout]
-    assert_required_keys!(@json_body[-1], required_keys, context: 'Node RRD data')
-    node_vm_helper(value: @json_body[-1]['netout'], output_msg: 'Network usage out', perf_label: 'net_out_usage')
+    node_vm_helper(value: @json_body[-1]['netout'], output_msg: 'Network usage out')
   end
 
   ###--- QEMU, LXC CHECKS ---###
@@ -671,102 +474,40 @@ class CheckPve
   def vm_disk_write_usage
     return unless @options[:mode] == 'vm-disk-write-usage'
     fetch_status_data(type: 'rrd')
-    required_keys = %w[diskwrite]
-    assert_required_keys!(@json_body[-1], required_keys, context: 'VM RRD data')
-    node_vm_helper(value: @json_body[-1]['diskwrite'], output_msg: 'Disk write', perf_label: 'disk_write_usage')
+    node_vm_helper(value: @json_body[-1]['diskwrite'], output_msg: 'Disk write')
   end
 
   def vm_disk_read_usage
     return unless @options[:mode] == 'vm-disk-read-usage'
     fetch_status_data(type: 'rrd')
-    required_keys = %w[diskread]
-    assert_required_keys!(@json_body[-1], required_keys, context: 'VM RRD data')
-    node_vm_helper(value: @json_body[-1]['diskread'], output_msg: 'Disk read', perf_label: 'disk_read_usage')
-  end
-
-  # status
-  def vm_status
-    return unless @options[:mode] == 'vm-status'
-    http_connect(path: "api2/json/nodes/#{@options[:node]}/#{@options[:type]}/#{@options[:vmid]}/status/current")
-    current_vm_status = @json_body['status']
-
-    if current_vm_status == 'running'
-        ok_msg("Virtual Machine #{@options[:node]}/#{@options[:type]}/#{@options[:vmid]} is running")
-    else
-        crit_msg("Virtual Machine #{@options[:node]}/#{@options[:type]}/#{@options[:vmid]} is not running")
-    end
+    node_vm_helper(value: @json_body[-1]['diskread'], output_msg: 'Disk read')
   end
 
   # cpu
   def vm_cpu_usage
     return unless @options[:mode] == 'vm-cpu-usage'
     fetch_status_data(type: 'rrd')
-    required_keys = %w[cpu]
-    assert_required_keys!(@json_body[-1], required_keys, context: 'VM RRD data')
-    node_vm_helper(value: @json_body[-1]['cpu'], output_msg: 'CPU usage', convert_value_to: '%', perf_label: 'cpu_usage')
+    node_vm_helper(value: @json_body[-1]['cpu'], output_msg: 'CPU usage', convert_value_to: '%')
   end
 
   # memory
   def vm_memory_usage
     return unless @options[:mode] == 'vm-memory-usage'
     fetch_status_data(type: 'rrd')
-    required_keys = %w[mem]
-    assert_required_keys!(@json_body[-1], required_keys, context: 'VM RRD data')
-    node_vm_helper(value: @json_body[-1]['mem'], output_msg: 'Memory usage', perf_label: 'memory_usage', value_to_compare: @json_body[-1]['maxmem'], convert_value_to: '%')
+    node_vm_helper(value: @json_body[-1]['mem'], output_msg: 'Memory usage', value_to_compare: @json_body[-1]['maxmem'], convert_value_to: '%')
   end
 
   # network
   def vm_net_in_usage
     return unless @options[:mode] == 'vm-net-in-usage'
     fetch_status_data(type: 'rrd')
-    required_keys = %w[netin]
-    assert_required_keys!(@json_body[-1], required_keys, context: 'VM RRD data')
-    node_vm_helper(value: @json_body[-1]['netin'], output_msg: 'Network usage in', perf_label: 'net_in_usage')
+    node_vm_helper(value: @json_body[-1]['netin'], output_msg: 'Network usage in')
   end
 
   def vm_net_out_usage
     return unless @options[:mode] == 'vm-net-out-usage'
     fetch_status_data(type: 'rrd')
-    required_keys = %w[netout]
-    assert_required_keys!(@json_body[-1], required_keys, context: 'VM RRD data')
-    node_vm_helper(value: @json_body[-1]['netout'], output_msg: 'Network usage out', perf_label: 'net_out_usage')
-  end
-
-  ###--- MISC ---###
-  # list nodes
-  def list_nodes
-    return unless @options[:mode] == 'list-nodes'
-    http_connect(path: 'api2/json/nodes')
-    puts "Node"
-    @json_body.each do |node|
-      puts node['node']
-    end
-    exit 0
-  end
-
-  # list vms
-  def list_vms
-    return unless @options[:mode] == 'list-vms'
-    http_connect(path: 'api2/json/nodes')
-    puts "Node       Type     Id     Name"
-    @json_body.each do |node|
-      node_name = node['node']
-
-      # QEMU VMs
-      http_connect(path: "api2/json/nodes/#{node_name}/qemu")
-      qemus = @json_body.map do |vm|
-        [node_name.ljust(10), 'qemu'.ljust(8), vm['vmid'].to_s.ljust(6), vm['name']]
-      end
-
-      # LXC Container
-      http_connect(path: "api2/json/nodes/#{node_name}/lxc")
-      lxcs = @json_body.map do |vm|
-        [node_name.ljust(10), 'lxc'.ljust(8), vm['vmid'].to_s.ljust(6), vm['name']]
-      end
-
-      (qemus + lxcs).each { |line| puts line.join(' ') }
-    end
-    exit 0
+    node_vm_helper(value: @json_body[-1]['netout'], output_msg: 'Network usage out')
   end
 end
 

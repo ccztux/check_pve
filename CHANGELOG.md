@@ -1,16 +1,4 @@
 # changes by release
-## 0.5.5
-### other
-* Rewritten to support older Ruby version (Ruby >= 2.0)
-
-### added
-* Added modes: node-cpu-load, vm-status, list-nodes, list-vms
-* Added option -d, --debug to enable debug
-* Added option -r, --percpu to divide load per cpu
-* Added pb to units
-* Added default thresholds
-* Added rudimentary option checks
-
 ## 0.3.0
 * __NOTE__ - I've renamed all checks to a more consistent syntax to distinguish them better.
 
