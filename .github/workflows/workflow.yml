@@ -10,7 +10,7 @@ jobs:
       - name: Install Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.x'
+          ruby-version: '2.0.0'
       - run: gem install rubocop
       - run: rubocop --fail-level W
       - run: ruby -c check_pve.rb
