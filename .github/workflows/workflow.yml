@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: ['2.0.0-p648', '3.3.9']
+        ruby-version: ['2.0.0-p648', '2.5.9', '3.3.9']
     steps:
       - uses: actions/checkout@v4
 
@@ -21,10 +21,10 @@ jobs:
         run: ruby -c check_pve.rb
 
       - name: Smoke test
-        run: ruby check_pve.rb --help || echo "Expected failure on Ruby 2.0.0 OK"
+        run: ruby check_pve.rb --help || echo "Expected failure on very old Ruby is OK"
 
-      - name: Lint (only on modern Ruby)
-        if: matrix.ruby-version != '2.0.0-p648'
+      - name: Lint (only on Ruby >= 3)
+        if: startsWith(matrix.ruby-version, '3.')
         run: |
           gem install rubocop
           rubocop --fail-level W
