@@ -1,7 +1,19 @@
-# check_pve
-This is a fork of: https://gitlab.com/6uellerBpanda/check_pve
+[![CI main](https://github.com/ccztux/check_pve/actions/workflows/workflow.yml/badge.svg?branch=main)](https://github.com/ccztux/check_pve/actions/workflows/workflow.yml)
+[![CI devel](https://github.com/ccztux/check_pve/actions/workflows/workflow.yml/badge.svg?branch=devel)](https://github.com/ccztux/check_pve/actions/workflows/workflow.yml)
 
-[Proxmox Virtual Environment](https://www.proxmox.com/en/proxmox-ve) Naemon/Icinga/Nagios plugin which checks various stuff via Proxmox API(v2).
+
+# check_pve
+
+Nagios/Icinga plugin to monitor Proxmox VE via its API.
+
+Fork of [check_pve by 6uellerBpanda](https://gitlab.com/6uellerBpanda/check_pve) with additional features and fixes.
+
+
+## Credits
+
+This project is based on the original [check_pve](https://gitlab.com/6uellerBpanda/check_pve) by **6uellerBpanda**.  
+All credits for the original work go to them.
+
 
 
 ## Requirements
