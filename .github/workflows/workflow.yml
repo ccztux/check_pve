@@ -4,28 +4,38 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: ['2.0.0-p648', '2.5.9', '3.3.9']
+        os-version: [7, 8, 9]
+        include:
+          - os-version: 7
+            docker-image: centos:7
+            ruby-package: ruby
+          - os-version: 8
+            docker-image: rockylinux:8
+            ruby-package: ruby
+          - os-version: 9
+            docker-image: rockylinux:9
+            ruby-package: ruby
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby-version }}
-
-      - name: Syntax check
-        run: ruby -c check_pve.rb
-
-      - name: Smoke test
-        run: ruby check_pve.rb --help || echo "Expected failure on very old Ruby is OK"
-
-      - name: Lint (only on Ruby >= 3)
-        if: startsWith(matrix.ruby-version, '3.')
+      - name: Run tests in container
         run: |
-          gem install rubocop
-          rubocop --fail-level W
+          docker run --rm \
+            -v $PWD:/workspace \
+            -w /workspace \
+            ${{ matrix.docker-image }} \
+            bash -c "
+              yum install -y ${{ matrix.ruby-package }} rubygems && \
+              ruby -v && \
+              ruby -c check_pve.rb && \
+              ruby check_pve.rb --help || echo 'Expected failure on very old Ruby is OK' && \
+              if [ ${{ matrix.os-version }} -eq 9 ]; then \
+                gem install rubocop && \
+                rubocop --fail-level W; \
+              fi
+            "
 
