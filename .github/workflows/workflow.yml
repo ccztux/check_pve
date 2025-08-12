@@ -40,7 +40,7 @@ jobs:
               ruby check_pve.rb --help || echo 'Expected failure on very old Ruby is OK' && \
               if [ ${{ matrix.os-version }} -eq 9 ]; then \
                 gem install rubocop && \
-                rubocop --fail-level W; \
+                rubocop --fail-level W --display-cop-names; \
               fi
             "
 
