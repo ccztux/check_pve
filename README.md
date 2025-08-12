@@ -41,7 +41,7 @@ pveum aclmod / -user monitoring@pve -role PVE_monitoring
 
 ## Usage
 ```shell
-  check_pve v0.5.5 [https://github.com/ccztux/check_pve]
+  check_pve v0.5.6 [https://github.com/ccztux/check_pve]
 
   This plugin checks various parameters of Proxmox Virtual Environment via API(v2)
 
