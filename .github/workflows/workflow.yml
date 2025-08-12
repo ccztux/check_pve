@@ -32,9 +32,8 @@ jobs:
             bash -c "
               yum install -y ${{ matrix.ruby-package }} rubygems && \
               if [ ${{ matrix.os-version }} -eq 9 ]; then \
-                yum module enable gcc-toolset -y; \
                 yum groupinstall \"Development Tools\"; \
-                yum install -y gcc gcc-c++ make ruby-devel; \
+                yum install -y ruby-devel gcc make redhat-rpm-config annobin; \
               fi && \
               ruby -v && \
               ruby -c check_pve.rb && \
