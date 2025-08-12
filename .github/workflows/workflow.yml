@@ -4,41 +4,54 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         os-version: [7, 8, 9]
-        include:
-          - os-version: 7
-            docker-image: centos:7
-            ruby-package: ruby
-          - os-version: 8
-            docker-image: rockylinux:8
-            ruby-package: ruby
-          - os-version: 9
-            docker-image: rockylinux:9
-            ruby-package: ruby
+        ruby-version: ['2.0.0-p648', '2.5.9', '3.3.9']
+    runs-on: ubuntu-latest
+    container:
+      image: rockylinux:${{ matrix.os-version }}
     steps:
+      - name: Install required packages
+        run: |
+          if [ ${{ matrix.os-version }} -eq 7 ]; then
+            yum install -y centos-release-scl
+            yum install -y gcc make which git ruby ruby-devel
+          elif [ ${{ matrix.os-version }} -eq 8 ]; then
+            dnf install -y gcc make which git ruby ruby-devel
+          elif [ ${{ matrix.os-version }} -eq 9 ]; then
+            dnf install -y ruby ruby-devel
+            dnf groupinstall -y "Development Tools"
+          fi
+          ruby --version
+          gem --version
+
       - uses: actions/checkout@v4
 
-      - name: Run tests in container
+      - name: Install requested Ruby version
         run: |
-          docker run --rm \
-            -v $PWD:/workspace \
-            -w /workspace \
-            ${{ matrix.docker-image }} \
-            bash -c "
-              yum install -y ${{ matrix.ruby-package }} rubygems && \
-              if [ ${{ matrix.os-version }} -eq 9 ]; then \
-                yum install -y ruby-devel gcc make; \
-              fi && \
-              ruby -v && \
-              ruby -c check_pve.rb && \
-              ruby check_pve.rb --help || echo 'Expected failure on very old Ruby is OK' && \
-              if [ ${{ matrix.os-version }} -eq 9 ]; then \
-                gem install rubocop && \
-                rubocop --fail-level W; \
-              fi
-            "
+          if [[ "${{ matrix.ruby-version }}" != "$(ruby -e 'print RUBY_VERSION')"* ]]; then
+            echo "Installing Ruby ${{ matrix.ruby-version }} via rbenv..."
+            yum install -y bzip2 gcc make git wget curl || dnf install -y bzip2 gcc make git wget curl
+            git clone https://github.com/rbenv/rbenv.git ~/.rbenv
+            git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
+            export PATH="$HOME/.rbenv/bin:$PATH"
+            eval "$(rbenv init -)"
+            rbenv install -s ${{ matrix.ruby-version }}
+            rbenv global ${{ matrix.ruby-version }}
+          fi
+          ruby --version
+
+      - name: Syntax check
+        run: ruby -c check_pve.rb
+
+      - name: Smoke test
+        run: ruby check_pve.rb --help || echo "Expected failure on very old Ruby is OK"
+
+      - name: Lint (only on Ruby >= 3)
+        if: startsWith(matrix.ruby-version, '3.')
+        run: |
+          gem install rubocop
+          rubocop --fail-level W
 
