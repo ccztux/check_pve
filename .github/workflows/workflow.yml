@@ -32,6 +32,7 @@ jobs:
             bash -c "
               yum install -y ${{ matrix.ruby-package }} rubygems && \
               if [ ${{ matrix.os-version }} -eq 9 ]; then \
+                yum groupinstall "Development Tools"; \
                 yum install -y ruby-devel gcc make; \
               fi && \
               ruby -v && \
