@@ -41,6 +41,8 @@ jobs:
               ruby check_pve.rb --help || echo 'Expected failure on very old Ruby is OK' && \
               if [ ${{ matrix.os-version }} -eq 9 ]; then \
                 gem install rubocop && \
+                find / -iname \"prism.h\"; \
+                cat /usr/local/lib64/gems/ruby/prism-1.4.0/mkmf.log; \
                 rubocop --fail-level W; \
               fi
             "
