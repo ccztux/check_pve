@@ -3,7 +3,8 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  test:
+  el-tests:
+    name: el${{ matrix.os-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
