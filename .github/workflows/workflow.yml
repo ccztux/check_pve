@@ -3,58 +3,42 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  el7:
+  test:
     runs-on: ubuntu-latest
-    container:
-      image: rockylinux:7
+    strategy:
+      fail-fast: false
+      matrix:
+        os-version: [7, 8, 9]
+        include:
+          - os-version: 7
+            docker-image: centos:7
+            ruby-package: ruby
+          - os-version: 8
+            docker-image: rockylinux:8
+            ruby-package: ruby
+          - os-version: 9
+            docker-image: rockylinux:9
+            ruby-package: ruby
     steps:
-      - name: Install tools
-        run: |
-          yum install -y centos-release-scl
-          yum install -y gcc make which git ruby ruby-devel
-          ruby --version
       - uses: actions/checkout@v4
-      - name: Syntax check
-        run: ruby -c check_pve.rb
-      - name: Smoke test
-        run: ruby check_pve.rb --help || echo "Expected failure on old Ruby is OK"
 
-  el8:
-    runs-on: ubuntu-latest
-    container:
-      image: rockylinux:8
-    steps:
-      - name: Install tools
+      - name: Run tests in container
         run: |
-          dnf install -y gcc make which git ruby ruby-devel
-          ruby --version
-      - uses: actions/checkout@v4
-      - name: Syntax check
-        run: ruby -c check_pve.rb
-      - name: Smoke test
-        run: ruby check_pve.rb --help
-      - name: Lint
-        run: |
-          gem install rubocop
-          rubocop --fail-level W
-
-  el9:
-    runs-on: ubuntu-latest
-    container:
-      image: rockylinux:9
-    steps:
-      - name: Install tools
-        run: |
-          dnf install -y ruby ruby-devel
-          dnf groupinstall -y "Development Tools"
-          ruby --version
-      - uses: actions/checkout@v4
-      - name: Syntax check
-        run: ruby -c check_pve.rb
-      - name: Smoke test
-        run: ruby check_pve.rb --help
-      - name: Lint
-        run: |
-          gem install rubocop
-          rubocop --fail-level W
+          docker run --rm \
+            -v $PWD:/workspace \
+            -w /workspace \
+            ${{ matrix.docker-image }} \
+            bash -c "
+              yum install -y ${{ matrix.ruby-package }} rubygems && \
+              if [ ${{ matrix.os-version }} -eq 9 ]; then \
+                yum install -y ruby-devel gcc make; \
+              fi && \
+              ruby -v && \
+              ruby -c check_pve.rb && \
+              ruby check_pve.rb --help || echo 'Expected failure on very old Ruby is OK' && \
+              if [ ${{ matrix.os-version }} -eq 9 ]; then \
+                gem install rubocop && \
+                rubocop --fail-level W; \
+              fi
+            "
 
