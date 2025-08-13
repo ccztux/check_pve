@@ -1,7 +1,22 @@
-# check_pve
-This is a fork of: https://gitlab.com/6uellerBpanda/check_pve
+![GitHub Actions Workflow Status devel](https://img.shields.io/github/actions/workflow/status/ccztux/check_pve/workflow.yml?branch=devel&label=devel)
+![GitHub Actions Workflow Status master](https://img.shields.io/github/actions/workflow/status/ccztux/check_pve/workflow.yml?branch=main&label=main)
+![GitHub Release](https://img.shields.io/github/v/release/ccztux/check_pve?label=latest-release)
+![GitHub License](https://img.shields.io/github/license/ccztux/check_pve?color=yellowgreen)
 
-[Proxmox Virtual Environment](https://www.proxmox.com/en/proxmox-ve) Naemon/Icinga/Nagios plugin which checks various stuff via Proxmox API(v2).
+
+
+# check_pve
+
+Nagios/Icinga plugin to monitor Proxmox VE via its API.
+
+Fork of [check_pve by 6uellerBpanda](https://gitlab.com/6uellerBpanda/check_pve) with additional features and fixes.
+
+
+## Credits
+
+This project is based on the original [check_pve](https://gitlab.com/6uellerBpanda/check_pve) by **6uellerBpanda**.  
+All credits for the original work go to them.
+
 
 
 ## Requirements
@@ -29,7 +44,7 @@ pveum aclmod / -user monitoring@pve -role PVE_monitoring
 
 ## Usage
 ```shell
-  check_pve v0.5.5 [https://github.com/ccztux/check_pve]
+  check_pve v0.5.6 [https://github.com/ccztux/check_pve]
 
   This plugin checks various parameters of Proxmox Virtual Environment via API(v2)
 
