@@ -1,5 +1,5 @@
-[![CI](https://github.com/ccztux/check_pve/actions/workflows/workflow.yml/badge.svg?branch=devel&label=devel)](https://github.com/ccztux/check_pve/actions/workflows/workflow.yml)
-[![CI](https://github.com/ccztux/check_pve/actions/workflows/workflow.yml/badge.svg?branch=main&label=main)](https://github.com/ccztux/check_pve/actions/workflows/workflow.yml)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ccztux/check_pve/workflow.yml?branch=devel&label=devel)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ccztux/check_pve/workflow.yml?branch=main&label=main)
 
 
 # check_pve
