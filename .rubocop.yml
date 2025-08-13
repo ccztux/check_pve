@@ -1,0 +1,15 @@
+---
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 2.5.5
+Layout/LineLength:
+  Max: 160
+Metrics/AbcSize:
+  Max: 20
+Metrics/ClassLength:
+  Enabled: false
+Layout/EmptyLineAfterGuardClause:
+  Enabled: false
+Style/MultilineWhenThen:
+  Enabled: false
+

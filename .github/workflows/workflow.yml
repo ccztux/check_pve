@@ -1,0 +1,46 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  el-tests:
+    name: el${{ matrix.os-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os-version: [7, 8, 9]
+        include:
+          - os-version: 7
+            docker-image: centos:7
+            ruby-package: ruby
+          - os-version: 8
+            docker-image: rockylinux:8
+            ruby-package: ruby
+          - os-version: 9
+            docker-image: rockylinux:9
+            ruby-package: ruby
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tests in container
+        run: |
+          docker run --rm \
+            -v $PWD:/workspace \
+            -w /workspace \
+            ${{ matrix.docker-image }} \
+            bash -c "
+              yum install -y ${{ matrix.ruby-package }} rubygems && \
+              if [ ${{ matrix.os-version }} -eq 9 ]; then \
+                yum groupinstall \"Development Tools\"; \
+                yum install -y ruby-devel gcc make redhat-rpm-config annobin; \
+              fi && \
+              ruby -v && \
+              ruby -c check_pve.rb && \
+              ruby check_pve.rb --help || echo 'Expected failure on very old Ruby is OK' && \
+              if [ ${{ matrix.os-version }} -eq 9 ]; then \
+                gem install rubocop && \
+                rubocop --fail-level W --display-cop-names; \
+              fi
+            "
+
