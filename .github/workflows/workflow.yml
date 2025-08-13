@@ -1,8 +1,12 @@
 name: CI
 
-on: [push, pull_request]
-  paths:
-    - '**.rb'
+on:
+  push:
+    paths:
+      - '**.rb'
+  pull_request:
+    paths:
+      - '**.rb'
 
 jobs:
   el-tests:
