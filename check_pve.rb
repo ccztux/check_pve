@@ -156,7 +156,6 @@ OptionParser.new do |opts| # rubocop:disable  Metrics/BlockLength
   ARGV.push('-h') if ARGV.empty?
 end.parse!
 
-
 cluster_modes = %w[
   cluster-status
 ]
@@ -196,32 +195,32 @@ misc_modes = %w[
 all_modes = cluster_modes + node_modes + vm_modes + misc_modes
 
 if options[:address].nil? || options[:address].empty?
-  warn ""
-  warn "ERROR: Option --address is required"
+  warn ''
+  warn 'ERROR: Option --address is required'
   exit 20
 end
 
 if options[:username].nil? || options[:username].empty?
-  warn ""
-  warn "ERROR: Option --username is required"
+  warn ''
+  warn 'ERROR: Option --username is required'
   exit 21
 end
 
 if options[:password].nil? || options[:password].empty?
-  warn ""
-  warn "ERROR: Option --password is required"
+  warn ''
+  warn 'ERROR: Option --password is required'
   exit 22
 end
 
 if options[:mode].nil? || options[:mode].empty?
-  warn ""
+  warn ''
   warn 'ERROR: Option --mode is required'
   exit 23
 elsif !all_modes.include?(options[:mode])
-  warn ""
+  warn ''
   warn "ERROR: Invalid --mode: '#{options[:mode]}'"
-  warn ""
-  warn "Valid values are:"
+  warn ''
+  warn 'Valid values are:'
   warn "  Cluster: #{cluster_modes.join(', ')}"
   warn "  Node:    #{node_modes.join(', ')}"
   warn "  VM:      #{vm_modes.join(', ')}"
@@ -230,11 +229,10 @@ elsif !all_modes.include?(options[:mode])
 end
 
 if vm_modes.include?(options[:mode]) && options[:vmid].nil?
-  warn ""
+  warn ''
   warn "ERROR: Option --vmid is required for mode '#{options[:mode]}'"
   exit 25
 end
-
 
 # check pve
 class CheckPve
@@ -281,7 +279,7 @@ class CheckPve
   #--------#
 
   # set default thresholds if no values are suppulied via args
-  def set_default_thresholds()
+  def set_default_thresholds
     if @options[:mode] == 'node-cpu-load'
       @options[:warning]  ||= '2,1.5,0.9'
       @options[:critical] ||= '3,2,1'
@@ -349,15 +347,23 @@ class CheckPve
     unit       = args[:unit] || ''
 
     if multi
-      return unk_msg("No data to check") unless data.is_a?(Array) && data.any?
+      return unk_msg('No data to check') unless data.is_a?(Array) && data.any?
 
       warnings = @options[:warning].split(',').map(&:to_f)
       criticals = @options[:critical].split(',').map(&:to_f)
 
       data.each_with_index do |val, idx|
         label = labels[idx] || "value#{idx + 1}"
-        warn  = warnings[idx] rescue nil
-        crit  = criticals[idx] rescue nil
+        warn  = begin
+          warnings[idx]
+        rescue StandardError
+          nil
+        end
+        crit = begin
+          criticals[idx]
+        rescue StandardError
+          nil
+        end
 
         val = val.to_f
         message = "#{label}: #{val.round(2)}#{unit}"
@@ -370,21 +376,18 @@ class CheckPve
           @okays << message
         end
 
-        warn_str = warn ? warn : ''
-        crit_str = crit ? crit : ''
+        warn_str = warn || ''
+        crit_str = crit || ''
         build_perfdata(perfdata: "'#{label}'=#{val.round(2)}#{unit}", warning: warn_str, critical: crit_str)
       end
 
       build_final_output
+    elsif data
+      warn_msg(@status_msg[:warn])
     else
-      if data
-        warn_msg(@status_msg[:warn])
-      else
-        ok_msg(@status_msg[:ok])
-      end
+      ok_msg(@status_msg[:ok])
     end
   end
-
 
   # helper for excluding
   def exclude(args = {})
@@ -396,9 +399,8 @@ class CheckPve
   # check for missing data
   def assert_required_keys!(hash, required_keys, context: 'data block')
     missing = required_keys.reject { |key| hash.key?(key) }
-    unless missing.empty?
-      unk_msg("Incomplete #{context} (Missing keys: #{missing.join(', ')})")
-    end
+    return if missing.empty?
+    unk_msg("Incomplete #{context} (Missing keys: #{missing.join(', ')})")
   end
 
   # generate perfdata
@@ -463,7 +465,7 @@ class CheckPve
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE if @options[:insecure]
-    http.read_timeout = 30  # Add timeout
+    http.read_timeout = 30 # Add timeout
 
     if req == 'post'
       request = Net::HTTP::Post.new(uri.request_uri)
@@ -474,23 +476,23 @@ class CheckPve
       request['cookie'] = @token
     end
     @response = http.request(request)
-    rescue Timeout::Error => e
-      unk_msg("Connection timeout: #{e.message}")
-    rescue Errno::ECONNREFUSED => e
-      unk_msg("Connection refused - check if PVE API is running: #{e.message}")
-    rescue Errno::EHOSTUNREACH => e
-      unk_msg("Host unreachable: #{e.message}")
-    rescue OpenSSL::SSL::SSLError => e
-      unk_msg("SSL connection error: #{e.message}")
-    rescue StandardError => e
-      unk_msg("Connection error: #{e.message}")
-    end
+  rescue Timeout::Error => e
+    unk_msg("Connection timeout: #{e.message}")
+  rescue Errno::ECONNREFUSED => e
+    unk_msg("Connection refused - check if PVE API is running: #{e.message}")
+  rescue Errno::EHOSTUNREACH => e
+    unk_msg("Host unreachable: #{e.message}")
+  rescue OpenSSL::SSL::SSLError => e
+    unk_msg("SSL connection error: #{e.message}")
+  rescue StandardError => e
+    unk_msg("Connection error: #{e.message}")
+  end
 
   # Validate required connection parameters
   def validate_connection_parameters!
-    unk_msg("Host address is required") if @options[:address].nil? || @options[:address].empty?
-    unk_msg("Username is required") if @options[:username].nil? || @options[:username].empty?
-    unk_msg("Password is required") if @options[:password].nil? || @options[:password].empty?
+    unk_msg('Host address is required') if @options[:address].nil? || @options[:address].empty?
+    unk_msg('Username is required') if @options[:username].nil? || @options[:username].empty?
+    unk_msg('Password is required') if @options[:password].nil? || @options[:password].empty?
   end
 
   # check http response
@@ -509,7 +511,7 @@ class CheckPve
     begin
       parsed_response = JSON.parse(@response.body)
       @json_body = parsed_response['data']
-      unk_msg("No data in API response") if @json_body.nil?
+      unk_msg('No data in API response') if @json_body.nil?
     rescue JSON::ParserError => e
       unk_msg("Invalid JSON response: #{e.message}")
     end
@@ -655,7 +657,7 @@ class CheckPve
     check_multiple_data(
       multi: true,
       data: loadavg,
-      labels: ['load1', 'load5', 'load15'],
+      labels: %w[load1 load5 load15],
       unit: ''
     )
   end
@@ -671,7 +673,8 @@ class CheckPve
   def node_memory_usage
     return unless @options[:mode] == 'node-memory-usage'
     fetch_status_data
-    node_vm_helper(value: @json_body['memory']['used'], output_msg: 'Memory usage', perf_label: 'memory_usage', value_to_compare: @json_body['memory']['total'], convert_value_to: '%')
+    node_vm_helper(value: @json_body['memory']['used'], output_msg: 'Memory usage', perf_label: 'memory_usage',
+                   value_to_compare: @json_body['memory']['total'], convert_value_to: '%')
   end
 
   ### node: ksm
@@ -780,7 +783,8 @@ class CheckPve
     fetch_status_data(type: 'rrd')
     required_keys = %w[mem]
     assert_required_keys!(@json_body[-1], required_keys, context: 'VM RRD data')
-    node_vm_helper(value: @json_body[-1]['mem'], output_msg: 'Memory usage', perf_label: 'memory_usage', value_to_compare: @json_body[-1]['maxmem'], convert_value_to: '%')
+    node_vm_helper(value: @json_body[-1]['mem'], output_msg: 'Memory usage', perf_label: 'memory_usage', value_to_compare: @json_body[-1]['maxmem'],
+                   convert_value_to: '%')
   end
 
   # network
@@ -805,7 +809,7 @@ class CheckPve
   def list_nodes
     return unless @options[:mode] == 'list-nodes'
     http_connect(path: 'api2/json/nodes')
-    puts "Node"
+    puts 'Node'
     @json_body.each do |node|
       puts node['node']
     end
@@ -816,7 +820,7 @@ class CheckPve
   def list_vms
     return unless @options[:mode] == 'list-vms'
     http_connect(path: 'api2/json/nodes')
-    puts "Node       Type     Id     Name"
+    puts 'Node       Type     Id     Name'
     @json_body.each do |node|
       node_name = node['node']
 
