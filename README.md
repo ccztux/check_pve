@@ -1,5 +1,8 @@
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ccztux/check_pve/workflow.yml?branch=devel&label=devel)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ccztux/check_pve/workflow.yml?branch=main&label=main)
+![GitHub Tag](https://img.shields.io/github/v/tag/ccztux/check_pve)
+![GitHub License](https://img.shields.io/github/license/ccztux/check_pve?color=blue)
+
 
 
 # check_pve
