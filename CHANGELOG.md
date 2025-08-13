@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v0.5.6] - 2025-08-??
+## [v0.5.6] - 2025-08-13
 
 ### Added
 - **Constants**: Added `NAGIOS_EXIT_CODES` and `BYTE_UNITS` constants for better code maintainability
